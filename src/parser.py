@@ -1,0 +1,6 @@
+# from fire import ...
+
+
+class Parser():
+    def __init__(self) -> None:
+        ...
