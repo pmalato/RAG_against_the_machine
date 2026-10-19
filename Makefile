@@ -1,8 +1,15 @@
 LFLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+SGOINFRE = ~/sgoinfre
+
+export UV_PROJECT_ENVIRONMENT = $(SGOINFRE)/venv-rag
+export UV_CACHE_DIR = $(SGOINFRE)/uv-cache
+export UV_LINK_MODE = copy
+export HF_HOME = $(SGOINFRE)/hugging_face
 
 all: run
 
 install:
+	mkdir -p $(UV_CACHE_DIR) $(HF_HOME)
 	uv sync
 
 run:
