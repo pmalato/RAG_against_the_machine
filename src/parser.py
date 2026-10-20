@@ -1,5 +1,3 @@
-
-
 class Parser():
     def __init__(self) -> None:
         self.index = Index()
