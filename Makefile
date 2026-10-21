@@ -1,5 +1,5 @@
 LFLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
-SGOINFRE = ~/sgoinfre
+SGOINFRE = /sgoinfre/pecoelho
 
 export UV_PROJECT_ENVIRONMENT = $(SGOINFRE)/venv-rag
 export UV_CACHE_DIR = $(SGOINFRE)/uv-cache
