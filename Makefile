@@ -13,10 +13,10 @@ install:
 	uv sync
 
 run:
-	uv run python3 src/
+	uv run python3 -m src
 
 debug:
-	uv run python3 pdb -m src/
+	uv run python3 pdb -m src
 
 lint:
 	uv run python3 -m flake8 src

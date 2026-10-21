@@ -1,4 +1,4 @@
-from processed import Processed
+from .processed import Processed
 
 
 def main() -> None:
