@@ -9,7 +9,11 @@ export HF_HOME = $(SGOINFRE)/hugging_face
 all: run
 
 install:
-	mkdir -p $(UV_CACHE_DIR) $(HF_HOME)
+	if [ hostname = portablepmalato ]; then \
+		sudo mkdir -p $(UV_CACHE_DIR) $(HF_HOME) \
+	else \
+		mkdir -p $(UV_CACHE_DIR) $(HF_HOME) \
+	fi
 	uv sync
 
 run:
