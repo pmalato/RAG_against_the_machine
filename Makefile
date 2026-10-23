@@ -1,18 +1,22 @@
 LFLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 SGOINFRE = /sgoinfre/pecoelho
 
-export UV_PROJECT_ENVIRONMENT = $(SGOINFRE)/venv-rag
-export UV_CACHE_DIR = $(SGOINFRE)/uv-cache
-export UV_LINK_MODE = copy
-export HF_HOME = $(SGOINFRE)/hugging_face
+ifneq ($(shell hostname),portablepmalato)
+	UV_PROJECT_ENVIRONMENT := $(SGOINFRE)/venv-rag;
+	UV_CACHE_DIR := $(SGOINFRE)/uv-cache;
+	UV_LINK_MODE := copy
+	HF_HOME := $(SGOINFRE)/hugging_face;
+	export UV_PROJECT_ENVIRONMENT
+	export UV_CACHE_DIR
+	export UV_LINK_MODE 
+	export HF_HOME
+endif
 
 all: run
 
 install:
-	if [ hostname = portablepmalato ]; then \
-		sudo mkdir -p $(UV_CACHE_DIR) $(HF_HOME) \
-	else \
-		mkdir -p $(UV_CACHE_DIR) $(HF_HOME) \
+	if [ "$$(hostname)" != "portablepmalato" ]; then \
+		mkdir -p $(UV_CACHE_DIR) $(HF_HOME); \
 	fi
 	uv sync
 
