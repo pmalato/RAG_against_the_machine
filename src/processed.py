@@ -1,3 +1,4 @@
+from ast import parse
 from pathlib import Path
 from .errors import (
     InvalidFileError
@@ -22,23 +23,23 @@ class Processed():
     def chunk_txt(self, file: Path) -> list[dict[Path, str]]:
         res: list[dict[Path, str]] = []
         with open(file, "r") as text:
-            chunk = text.read()
-            if not self.is_chunk_valid(chunk):
-                sub_chunk: list[str] = "\n\n".split(chunk)
-                for part in sub_chunk:
-                    if not self.is_chunk_valid(part):
-                        small_chunk: list[str] = '\n'.split(part)
-                        for piece in small_chunk:
-                            if not self.is_chunk_valid(piece):
-                                smaller: list[str] = ". ".split(piece)
-                                for phrase in smaller:
-                                    res += [{file: phrase}]
-                            else:
-                                res += [{file: piece}]
-                    else:
-                        res += [{file: part}]
-            else:
-                res += [{file: chunk}]
+            chunk: str = text.read()
+        if not self.is_chunk_valid(chunk):
+            sub_chunk: list[str] = "\n\n".split(chunk)
+            for part in sub_chunk:
+                if not self.is_chunk_valid(part):
+                    small_chunk: list[str] = '\n'.split(part)
+                    for piece in small_chunk:
+                        if not self.is_chunk_valid(piece):
+                            smaller: list[str] = ". ".split(piece)
+                            for phrase in smaller:
+                                res += [{file: phrase}]
+                        else:
+                            res += [{file: piece}]
+                else:
+                    res += [{file: part}]
+        else:
+            res += [{file: chunk}]
         return res
 
     def chunk_md(self, file: Path) -> list[dict[Path, str]]:
@@ -48,10 +49,16 @@ class Processed():
         # return res
 
     def chunk_py(self, file: Path) -> list[dict[Path, str]]:
-        # res: list[dict[Path, str]] = []
+        res: list[dict[Path, str]] = []
         with open(file, "r") as text:
-            return [{file: text.read()}]
-        # return res
+            chunk: str = text.read()
+        if not self.is_chunk_valid(chunk):
+            tree = parse(chunk, filename=file)
+            lines: list[str] = chunk.splitlines(keepends=True)
+            class_str: list[str] = []
+        else:
+            res += [{file: chunk}]
+        return res
 
     def chunk_files(self) -> None:
         self.store_files()
