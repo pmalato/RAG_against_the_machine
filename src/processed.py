@@ -1,4 +1,4 @@
-from ast import parse
+from ast import Module, parse, ClassDef, walk, FunctionDef
 from pathlib import Path
 from .errors import (
     InvalidFileError
@@ -48,14 +48,27 @@ class Processed():
             return [{file: text.read()}]
         # return res
 
+    def get_class_text(self, tree: Module, lines: list[str]) -> str:
+        for node in tree.body:
+            if isinstance(node, ClassDef):
+                start = node.lineno - 1
+                end = node.end_lineno if hasattr(
+                    node, "end_lineno") else len(lines)
+                class_text = "".join(lines[start:end])
+                if not self.is_chunk_valid(class_text):
+                    ...
+                else:
+                    return class_text
+        return "Something went wrong."
+
     def chunk_py(self, file: Path) -> list[dict[Path, str]]:
         res: list[dict[Path, str]] = []
         with open(file, "r") as text:
             chunk: str = text.read()
         if not self.is_chunk_valid(chunk):
-            tree = parse(chunk, filename=file)
+            tree: Module = parse(chunk, filename=file)
             lines: list[str] = chunk.splitlines(keepends=True)
-            class_str: list[str] = []
+            class_text: str = self.get_class_text(tree, lines)
         else:
             res += [{file: chunk}]
         return res
