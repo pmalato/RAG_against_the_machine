@@ -25,13 +25,13 @@ class Processed():
         with open(file, "r") as text:
             chunk: str = text.read()
         if not self.is_chunk_valid(chunk):
-            sub_chunk: list[str] = "\n\n".split(chunk)
+            sub_chunk: list[str] = chunk.split("\n\n")
             for part in sub_chunk:
                 if not self.is_chunk_valid(part):
-                    small_chunk: list[str] = '\n'.split(part)
+                    small_chunk: list[str] = part.split("\n")
                     for piece in small_chunk:
                         if not self.is_chunk_valid(piece):
-                            smaller: list[str] = ". ".split(piece)
+                            smaller: list[str] = piece.split(". ")
                             for phrase in smaller:
                                 res += [{file: phrase}]
                         else:
@@ -48,19 +48,6 @@ class Processed():
             return [{file: text.read()}]
         # return res
 
-    def get_class_text(self, tree: Module, lines: list[str]) -> str:
-        for node in tree.body:
-            if isinstance(node, ClassDef):
-                start = node.lineno - 1
-                end = node.end_lineno if hasattr(
-                    node, "end_lineno") else len(lines)
-                class_text = "".join(lines[start:end])
-                if not self.is_chunk_valid(class_text):
-                    ...
-                else:
-                    return class_text
-        return "Something went wrong."
-
     def chunk_py(self, file: Path) -> list[dict[Path, str]]:
         res: list[dict[Path, str]] = []
         with open(file, "r") as text:
@@ -68,7 +55,16 @@ class Processed():
         if not self.is_chunk_valid(chunk):
             tree: Module = parse(chunk, filename=file)
             lines: list[str] = chunk.splitlines(keepends=True)
-            class_text: str = self.get_class_text(tree, lines)
+            for node in tree.body:
+                if isinstance(node, ClassDef):
+                    start = node.lineno - 1
+                    end = node.end_lineno if hasattr(
+                        node, "end_lineno") else len(lines)
+                    class_text: str = "".join(lines[start:end])
+                    if not self.is_chunk_valid(class_text):
+                        for part in 
+                    else:
+                        res += [{file: class_text}]
         else:
             res += [{file: chunk}]
         return res
