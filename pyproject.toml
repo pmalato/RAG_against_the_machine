@@ -5,6 +5,7 @@ description = "Retrieval-Augmented Generator for QWEN3-0.6B"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "bm25s>=0.3.15",
     "fire>=0.7.1",
     "flake8>=7.4.1",
     "mypy>=2.4.0",

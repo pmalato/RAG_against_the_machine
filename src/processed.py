@@ -42,40 +42,15 @@ class Processed():
             res += [{file: chunk}]
         return res
 
-    def chunk_md(self, file: Path) -> list[dict[Path, str]]:
-        # res: list[dict[Path, str]] = []
-        with open(file, "r") as text:
-            return [{file: text.read()}]
-        # return res
-
     def chunk_py(self, file: Path) -> list[dict[Path, str]]:
         res: list[dict[Path, str]] = []
-        with open(file, "r") as text:
-            chunk: str = text.read()
-        if not self.is_chunk_valid(chunk):
-            tree: Module = parse(chunk, filename=file)
-            lines: list[str] = chunk.splitlines(keepends=True)
-            for node in tree.body:
-                if isinstance(node, ClassDef):
-                    start = node.lineno - 1
-                    end = node.end_lineno if hasattr(
-                        node, "end_lineno") else len(lines)
-                    class_text: str = "".join(lines[start:end])
-                    if not self.is_chunk_valid(class_text):
-                        for part in 
-                    else:
-                        res += [{file: class_text}]
-        else:
-            res += [{file: chunk}]
         return res
 
     def chunk_files(self) -> None:
         self.store_files()
         for f in self._files:
-            if f.suffix == ".txt":
+            if f.suffix == ".txt" or f.suffix == ".md":
                 self._processed += [self.chunk_txt(f)]
-            elif f.suffix == ".md":
-                self._processed += [self.chunk_md(f)]
             elif f.suffix == ".py":
                 self._processed += [self.chunk_py(f)]
             else:
