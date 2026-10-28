@@ -73,9 +73,9 @@ class Chunked():
         for f in self._files:
             text = self.file_reader(f)
             if f.suffix == ".txt" or f.suffix == ".md":
-                self._processed += self.chunk_md(f, text, max_chunk_size)
+                self.chunk_md(f, text, max_chunk_size)
             elif f.suffix == ".py":
-                self._processed += self.chunk_py(f, text, max_chunk_size)
+                self.chunk_py(f, text, max_chunk_size)
             else:
                 raise InvalidFileError()
 
