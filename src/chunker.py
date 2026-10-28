@@ -1,86 +1,96 @@
 from pathlib import Path
-from .models import MinimalSource
+from tqdm import tqdm
+from .models import Chunk
 from langchain_text_splitters import (
     Language,
     RecursiveCharacterTextSplitter
     )
 from .errors import (
-    InvalidFileError,
-    ReadingFilesError
+    ReadingFilesError,
+    InvalidChunkSizeError
     )
+
+LANGUAGES: dict[str, Language] = {
+    ".py": Language.PYTHON,
+    ".md": Language.MARKDOWN,
+    ".txt": Language.MARKDOWN
+}
+MAX_ALLOWED_CHUNK_SIZE = 2000
+OVERLAP_RATIO = 0.2
 
 
 class Chunked():
-    def __init__(self) -> None:
-        self._files: list[Path]
-        self._processed: list[MinimalSource] = []
+    """Discovers, reads and chunks the corpus files."""
+    def __init__(self, root: str = "data/raw") -> None:
+        self._root: Path = Path(root)
+        self._files: list[Path] = []
+        self._processed: list[Chunk] = []
+        self._skipped: list[Path] = []
 
-    def store_files(self) -> None:
-        files: set[Path] = set(element for element in Path(
-            "data/raw/vllm-0.10.1").rglob("*"))
-        self._files = [x for x in sorted(files) if x.suffix in (
-            ".py", ".txt", ".md")]
+    def collect_files(self) -> None:
+        """Collects the files under the root, sorted."""
+        self._files = [
+            f for f in sorted(self._root.rglob("*"))
+            if f.is_file() and f.suffix in LANGUAGES
+        ]
 
     def file_reader(self, file: Path) -> str:
+        """Return the raw content of a file (offsets stay untouched)."""
         try:
             with open(
                     file, encoding="utf-8",
                     errors="replace", newline="") as file_to_chunk:
-                return str(file_to_chunk)
+                return file_to_chunk.read()
         except (OSError, UnicodeDecodeError):
             raise ReadingFilesError
 
-    def chunk_md(
-            self, file: Path, text: str,
-            max_chunk_size: int) -> None:
-        splitter = RecursiveCharacterTextSplitter.from_language(
-            language=Language.MARKDOWN,
-            chunk_size=max_chunk_size,
-            chunk_overlap=int(max_chunk_size * 0.2),
-            add_start_index=True)
-        docs = splitter.create_documents([text])
-        for d in docs:
-            script: str = d.page_content
-            start = d.metadata["start-index"]
-            end = start + len(script)
-            self._processed += [MinimalSource(
-                file_path=str(file),
-                text=script,
-                first_character_index=start,
-                last_character_index=end)]
+    @staticmethod
+    def split_text(
+            text: str, language: Language,
+            max_chunk_size: int) -> list[tuple[str, int, int]]:
+        """Split text into (content, start, end) tuples.
 
-    def chunk_py(
-            self, file: Path, code: str,
-            max_chunk_size: int) -> None:
+        The end index is exclusive, like a Python slice.
+        """
         splitter = RecursiveCharacterTextSplitter.from_language(
-            language=Language.PYTHON,
+            language=language,
             chunk_size=max_chunk_size,
-            chunk_overlap=(max_chunk_size * 0.2),
+            chunk_overlap=int(max_chunk_size * OVERLAP_RATIO),
             add_start_index=True)
-        docs = splitter.create_documents([code])
-        for d in docs:
-            script: str = d.page_content
-            start: int = d.metadata["start_index"]
-            end: int = start + len(script)
-            self._processed += [MinimalSource(
-                file_path=str(file),
-                text=script,
-                first_character_index=start,
-                last_character_index=end)]
+        parts: list[tuple[str, int, int]] = []
+        for doc in splitter.create_documents([text]):
+            start = doc.metadata["start_index"]
+            if start < 0:
+                continue
+            content: str = doc.page_content
+            parts.append((content, start, start + len(content)))
+        return parts
 
     def chunk_files(self, max_chunk_size: int) -> None:
-        self.store_files()
-        for f in self._files:
-            text = self.file_reader(f)
-            if f.suffix == ".txt" or f.suffix == ".md":
-                self.chunk_md(f, text, max_chunk_size)
-            elif f.suffix == ".py":
-                self.chunk_py(f, text, max_chunk_size)
-            else:
-                raise InvalidFileError()
+        """Chunk every supported file with the given size limit."""
+        if not isinstance(max_chunk_size, int) or \
+                not (0 <= max_chunk_size <= MAX_ALLOWED_CHUNK_SIZE):
+            raise InvalidChunkSizeError
+        self.collect_files()
+        self._processed = []
+        self._skipped = []
+        for file in tqdm(self._files, desc="Chunking", unit="file"):
+            try:
+                text: str = self.file_reader(file)
+            except ReadingFilesError:
+                self._skipped += [file]
+                continue
+            language = LANGUAGES[file.suffix.lower()]
+            for content, start, end in self.split_text(
+                    text, language, max_chunk_size):
+                self._processed += [Chunk(
+                    file_path=file.as_posix(),
+                    text=content,
+                    first_character_index=start,
+                    last_character_index=end)]
 
     def get_files(self) -> list[Path]:
         return self._files
 
-    def get_processed(self) -> list[MinimalSource]:
+    def get_processed(self) -> list[Chunk]:
         return self._processed

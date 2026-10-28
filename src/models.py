@@ -9,6 +9,10 @@ class MinimalSource(BaseModel):
     last_character_index: int
 
 
+class Chunk(MinimalSource):
+    text: str = Field(min_length=1)
+
+
 class UnansweredQuestion(BaseModel):
     question_id: str = Field(default_factory=lambda: str(uuid4()))
     question: str

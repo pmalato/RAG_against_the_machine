@@ -12,3 +12,10 @@ class InvalidFileError(RagError):
 class ReadingFilesError(RagError):
     def __init__(self, message: str = "Error while reading file"):
         super().__init__(message)
+
+
+class InvalidChunkSizeError(RagError):
+    def __init__(
+            self, message: str = "Invalid size for chunk,"
+            "must be between 1 - 2000"):
+        super().__init__(message)

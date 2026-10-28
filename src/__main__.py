@@ -6,11 +6,8 @@ from pydantic import ValidationError
 def main() -> None:
     try:
         pro: Chunked = Chunked()
-        pro.store_files()
-        for f in pro.get_files():
-            text: str = pro.file_reader(f)
-            if f.suffix == ".md":
-                pro.chunk_md(text, 2000)
+        pro.chunk_files(2000)
+        [print(x.first_character_index, x.last_character_index) for x in pro.get_processed()]
     except (KeyboardInterrupt, ValidationError, RagError) as error:
         print(error)
 
