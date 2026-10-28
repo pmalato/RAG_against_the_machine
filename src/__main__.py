@@ -7,8 +7,10 @@ def main() -> None:
     try:
         pro: Chunked = Chunked()
         pro.store_files()
-        test = pro.get_files()
-        print(len(test))
+        for f in pro.get_files():
+            text: str = pro.file_reader(f)
+            if f.suffix == ".md":
+                pro.chunk_md(text, 2000)
     except (KeyboardInterrupt, ValidationError, RagError) as error:
         print(error)
 
