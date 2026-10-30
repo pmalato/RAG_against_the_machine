@@ -1,5 +1,5 @@
 class CLIConfig():
-    def __init__(self):
+    def __init__(self) -> None:
         ...
 
     def index(self, max_chunk_size: int) -> None:
