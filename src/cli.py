@@ -27,11 +27,17 @@ class CLIConfig():
         indexer.save_processed()
 
     def search(self, query: str, k: int = 10) -> None:
-        ...
+        indexer: Indexer = Indexer.load_processed()
+        chunks: list[Chunk] = indexer.search(query, k)
+        [print(
+            x.file_path, x.first_character_index,
+            x.last_character_index) for x in chunks]
 
     def search_dataset(
-            self, dataset_path: str,
-            save_directory: str, k: int = 10) -> None:
+            self, dataset_path: str = "data/datasets/UnansweredQuestions/"
+            "dataset_docs_public.json",
+            save_directory: str = "data/output/search_results/"
+            "UnansweredQuestions", k: int = 10) -> None:
         ...
 
     def answer(self, query: str, k: int = 10) -> None:

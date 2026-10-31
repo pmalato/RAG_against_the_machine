@@ -24,7 +24,7 @@ class Indexer():
     """BM25 index over chunks, with save/load support."""
     def __init__(self) -> None:
         self._chunks: list[Chunk] = []
-        self._retriever: BM25 = BM25()
+        self._retriever: BM25 | None = None
 
     def build_chunks(self, chunks: list[Chunk]) -> None:
         """Tokenize the chunk texts and build the BM25 index."""
@@ -51,6 +51,7 @@ class Indexer():
                 dump([chk.model_dump() for chk in self._chunks], resolve)
         except OSError:
             raise AccessFilesError
+        print(f"Ingestion complete! Indices saved under '{directory}'")
 
     @classmethod
     def load_processed(cls, directory: str = "data/processed/") -> "Indexer":
@@ -76,9 +77,17 @@ class Indexer():
     def search(self, query: str, k: int) -> list[Chunk]:
         """Return the top-k chunks for a query, best first."""
         if k <= 0 or not query.strip():
-
+            raise ValueError("Invalid query")
+        if not self._retriever or not self._chunks:
+            raise MissingattributesError
+        tokens: list[list[str]] = tokenize_texts([query], False)
+        if not tokens or not tokens[0]:
             return []
-        return []
+        k = min(k, len(self._chunks))
+        doc_pos, scores = self._retriever.retrieve(
+            tokens, k=k, show_progress=False)
+        return [self._chunks[pos] for pos, score in zip(doc_pos[0], scores[0])
+                if score > 0]
 
     def get_chunks(self) -> list[Chunk]:
         return self._chunks

@@ -7,7 +7,8 @@ from .cli import CLIConfig
 def main() -> None:
     try:
         Fire(CLIConfig)
-    except (KeyboardInterrupt, ValidationError, RagError) as error:
+    except (KeyboardInterrupt, ValidationError,
+            TypeError, ValueError, RagError) as error:
         print(error)
 
 
