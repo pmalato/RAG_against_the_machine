@@ -1,9 +1,30 @@
+from .chunker import Chunked
+from .models import Chunk
+from .indexer import Indexer
+from .errors import InvalidChunkSizeError
+
+
 class CLIConfig():
     def __init__(self) -> None:
         ...
 
-    def index(self, max_chunk_size: int) -> None:
-        ...
+    def index(self, max_chunk_size: int = 2000) -> None:
+        """Takes all files in 'data/raw' accepting only '.md', '.txt'
+        and '.py' formats. Using the LangChain module, separates every
+        valid file into chunks with size up to inputed 'max_chunk_size'.
+        These chunks are validated with the help of the pydantic module.
+        Finally, uses bm25s module to store every chunk into 'data/processed/'.
+        Adittional informative files are added in 'data/processed' folder
+        as well.
+        """
+        if max_chunk_size <= 0 or max_chunk_size > 2000:
+            raise InvalidChunkSizeError
+        builder: Chunked = Chunked()
+        builder.chunk_files(max_chunk_size)
+        chunks: list[Chunk] = builder.get_processed()
+        indexer: Indexer = Indexer()
+        indexer.build_chunks(chunks)
+        indexer.save_processed()
 
     def search(self, query: str, k: int = 10) -> None:
         ...
