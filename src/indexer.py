@@ -76,6 +76,7 @@ class Indexer():
     def search(self, query: str, k: int) -> list[Chunk]:
         """Return the top-k chunks for a query, best first."""
         if k <= 0 or not query.strip():
+            # so para o Kruger ver
             return []
         return []
 
