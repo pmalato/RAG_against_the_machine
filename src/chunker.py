@@ -6,7 +6,7 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter
     )
 from .errors import (
-    ReadingFilesError,
+    AccessFilesError,
     InvalidChunkSizeError
     )
 
@@ -42,7 +42,7 @@ class Chunked():
                     errors="replace", newline="") as file_to_chunk:
                 return file_to_chunk.read()
         except (OSError, UnicodeDecodeError):
-            raise ReadingFilesError
+            raise AccessFilesError
 
     @staticmethod
     def split_text(
@@ -77,7 +77,7 @@ class Chunked():
         for file in tqdm(self._files, desc="Chunking", unit="file"):
             try:
                 text: str = self.file_reader(file)
-            except ReadingFilesError:
+            except AccessFilesError:
                 self._skipped += [file]
                 continue
             language = LANGUAGES[file.suffix.lower()]

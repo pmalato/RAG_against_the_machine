@@ -2,7 +2,7 @@ LFLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disa
 SGOINFRE = /sgoinfre/pecoelho
 
 ifneq ($(shell hostname),portablepmalato)
-	UV_PROJECT_ENVIRONMENT := $(SGOINFRE)/venv-rag
+	UV_PROJECT_ENVIRONMENT := $(SGOINFRE)/rag.github/.venv
 	UV_CACHE_DIR := $(SGOINFRE)/uv-cache
 	UV_LINK_MODE := copy
 	HF_HOME := $(SGOINFRE)/hugging_face

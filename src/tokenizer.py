@@ -1,0 +1,6 @@
+class Token():
+    def __init__(self) -> None:
+        ...
+
+    def build_tokens(self) -> None:
+        ...
