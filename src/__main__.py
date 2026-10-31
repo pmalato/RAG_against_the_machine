@@ -20,8 +20,6 @@ def main() -> None:
         index: Indexer = Indexer()
         index.build_chunks(chunks)
         index.save_processed()
-        test: Indexer = Indexer.load_processed()
-        [personalized_print(chk) for chk in test.get_chunks()]
     except (KeyboardInterrupt, ValidationError, RagError) as error:
         print(error)
 
