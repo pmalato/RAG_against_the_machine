@@ -1,7 +1,6 @@
 from bm25s import BM25, tokenize
 from pathlib import Path
-from json import dump
-# from pydantic import ValidationError
+from json import dump, load
 from .models import Chunk
 from .errors import (
     AccessFilesError,
@@ -54,29 +53,31 @@ class Indexer():
             raise AccessFilesError
 
     @classmethod
-    def load_processed(cls, directory: str = "data/processed/") -> Indexer:
-        if not directory:
+    def load_processed(cls, directory: str = "data/processed/") -> "Indexer":
+        """Restore an Indexer from a directory written by save_processed."""
+        source: Path = Path(directory)
+        if not directory or not source.is_dir():
             raise MissingDirectoryError
-        object = cls()
-        chunks = object.get_chunks()
-        retriever = object.get_retriever()
-        if not chunks or not retriever:
-            raise MissingattributesError
         try:
-            retriever.load(directory, mmap=True)
-        except FileNotFoundError:
+            retriever: BM25 = BM25.load(directory, mmap=True)
+            with open(source / CHUNKS_FILE, encoding="utf-8") as res:
+                raw = load(res)
+                chunks: list[Chunk] = [
+                    Chunk.model_validate(item) for item in raw]
+        except (OSError, ValueError, TypeError):
             raise MissingIndexError
-        tokens: list[list[str]] = tokenize(retriever)
-        retriever.index(tokens)
-        return object
+        if retriever.scores["num_docs"] != len(chunks):
+            raise MissingIndexError
+        indexer: Indexer = cls()
+        indexer._retriever = retriever
+        indexer._chunks = chunks
+        return indexer
 
     def search(self, query: str, k: int) -> list[Chunk]:
-        if k <= 0 or query == "":
+        """Return the top-k chunks for a query, best first."""
+        if k <= 0 or not query.strip():
             return []
         return []
 
     def get_chunks(self) -> list[Chunk]:
         return self._chunks
-
-    def get_retriever(self) -> BM25:
-        return self._retriever

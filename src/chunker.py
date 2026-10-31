@@ -27,14 +27,14 @@ class Chunked():
         self._processed: list[Chunk] = []
         self._skipped: list[Path] = []
 
-    def collect_files(self) -> None:
+    def _collect_files(self) -> None:
         """Collects the files under the root, sorted."""
         self._files = [
             f for f in sorted(self._root.rglob("*"))
             if f.is_file() and f.suffix in LANGUAGES
         ]
 
-    def file_reader(self, file: Path) -> str:
+    def _file_reader(self, file: Path) -> str:
         """Return the raw content of a file (offsets stay untouched)."""
         try:
             with open(
@@ -45,7 +45,7 @@ class Chunked():
             raise AccessFilesError
 
     @staticmethod
-    def split_text(
+    def _split_text(
             text: str, language: Language,
             max_chunk_size: int) -> list[tuple[str, int, int]]:
         """Split text into (content, start, end) tuples.
@@ -71,17 +71,17 @@ class Chunked():
         if not isinstance(max_chunk_size, int) or \
                 not (0 <= max_chunk_size <= MAX_ALLOWED_CHUNK_SIZE):
             raise InvalidChunkSizeError
-        self.collect_files()
+        self._collect_files()
         self._processed = []
         self._skipped = []
         for file in tqdm(self._files, desc="Chunking", unit="file"):
             try:
-                text: str = self.file_reader(file)
+                text: str = self._file_reader(file)
             except AccessFilesError:
                 self._skipped += [file]
                 continue
             language = LANGUAGES[file.suffix.lower()]
-            for content, start, end in self.split_text(
+            for content, start, end in self._split_text(
                     text, language, max_chunk_size):
                 self._processed += [Chunk(
                     file_path=file.as_posix(),
