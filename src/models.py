@@ -4,7 +4,6 @@ from uuid import uuid4
 
 class MinimalSource(BaseModel):
     file_path: str
-    text: str = Field(min_length=1)
     first_character_index: int
     last_character_index: int
 

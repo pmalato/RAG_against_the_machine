@@ -1,11 +1,19 @@
 from pathlib import Path
 from json import load, dump
 from .chunker import Chunked
-from .models import Chunk
 from .indexer import Indexer
+from .models import (
+    Chunk,
+    MinimalSource,
+    MinimalSearchResults
+    )
 from .errors import (
     InvalidChunkSizeError,
-    MissingDirectoryError)
+    MissingDirectoryError,
+    )
+
+CODE: str = "dataset_code_public.json"
+DOCS: str = "dataset_docs_public.json"
 
 
 class CLIConfig():
@@ -30,29 +38,42 @@ class CLIConfig():
         indexer.build_chunks(chunks)
         indexer.save_processed()
 
-    def search(self, query: str, k: int = 10) -> None:
+    def search(self, query: str, k: int = 10) -> list[Chunk]:
         indexer: Indexer = Indexer.load_processed()
-        chunks: list[Chunk] = indexer.search(query, k)
-        [print(
-            x.file_path, x.first_character_index,
-            x.last_character_index) for x in chunks]
+        return indexer.search(query, k)
 
     def search_dataset(
-            self, dataset_path: str = "data/datasets/UnansweredQuestions/"
-            "dataset_docs_public.json",
-            save_directory: str = "data/output/search_results/"
-            "UnansweredQuestions", k: int = 10) -> None:
+            self, dataset_path: str,
+            save_directory: str = "data/output/"
+            "search_results/UnansweredQuestions", k: int = 10) -> None:
+        if not save_directory.startswith("data/output/"):
+            raise MissingDirectoryError(
+                "Your answers must go to 'data/output/'")
         if not dataset_path:
             raise MissingDirectoryError("Invalid path for 'dataset_path'")
         if not save_directory:
             raise MissingDirectoryError("Invalid path for 'save_directory'")
+        end: str = DOCS if dataset_path.endswith(DOCS) else CODE
         source: Path = Path(dataset_path)
         target: Path = Path(save_directory)
-        for f in source.glob('*'):
-            with open(f, encoding="utf-8") as file:
+        res: list[MinimalSearchResults] = []
+        try:
+            with open(source, encoding="utf-8") as file:
                 data: dict[str, list[dict[str, str]]] = load(file)
-            indexer: Indexer = Indexer.load_processed()
-            
+            for d in data["rag_questions"]:
+                id: str = d["question_id"]
+                query: str = d["question"]
+                chunks: list[MinimalSource] = [MinimalSource(
+                    **chk.model_dump(exclude={"text"}))
+                    for chk in self.search(query, k)]
+                res += [MinimalSearchResults(
+                    question_id=id, question=query, retrieved_sources=chunks)]
+            target.mkdir(parents=True, exist_ok=True)
+            with open(target / end, "w", encoding="utf-8") as resolve:
+                dump([piece.model_dump() for piece in res], resolve)
+            print(f"Saved student_search_results to '{save_directory}'")
+        except OSError as e:
+            print(e)
 
     def answer(self, query: str, k: int = 10) -> None:
         ...
