@@ -1,7 +1,11 @@
+from pathlib import Path
+from json import load, dump
 from .chunker import Chunked
 from .models import Chunk
 from .indexer import Indexer
-from .errors import InvalidChunkSizeError
+from .errors import (
+    InvalidChunkSizeError,
+    MissingDirectoryError)
 
 
 class CLIConfig():
@@ -38,7 +42,17 @@ class CLIConfig():
             "dataset_docs_public.json",
             save_directory: str = "data/output/search_results/"
             "UnansweredQuestions", k: int = 10) -> None:
-        ...
+        if not dataset_path:
+            raise MissingDirectoryError("Invalid path for 'dataset_path'")
+        if not save_directory:
+            raise MissingDirectoryError("Invalid path for 'save_directory'")
+        source: Path = Path(dataset_path)
+        target: Path = Path(save_directory)
+        for f in source.glob('*'):
+            with open(f, encoding="utf-8") as file:
+                data: dict[str, list[dict[str, str]]] = load(file)
+            indexer: Indexer = Indexer.load_processed()
+            
 
     def answer(self, query: str, k: int = 10) -> None:
         ...
