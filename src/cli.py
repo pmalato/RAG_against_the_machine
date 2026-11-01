@@ -1,11 +1,13 @@
 from pathlib import Path
+from typing import Any
 from json import load, dump
 from .chunker import Chunked
 from .indexer import Indexer
 from .models import (
     Chunk,
     MinimalSource,
-    MinimalSearchResults
+    MinimalSearchResults,
+    StudentSearchResults
     )
 from .errors import (
     InvalidChunkSizeError,
@@ -56,7 +58,8 @@ class CLIConfig():
         end: str = DOCS if dataset_path.endswith(DOCS) else CODE
         source: Path = Path(dataset_path)
         target: Path = Path(save_directory)
-        res: list[MinimalSearchResults] = []
+        std_search_res: list[MinimalSearchResults] = []
+        res: StudentSearchResults
         try:
             with open(source, encoding="utf-8") as file:
                 data: dict[str, list[dict[str, str]]] = load(file)
@@ -66,11 +69,12 @@ class CLIConfig():
                 chunks: list[MinimalSource] = [MinimalSource(
                     **chk.model_dump(exclude={"text"}))
                     for chk in self.search(query, k)]
-                res += [MinimalSearchResults(
+                std_search_res += [MinimalSearchResults(
                     question_id=id, question=query, retrieved_sources=chunks)]
+            res = StudentSearchResults(search_results=std_search_res, k=k)
             target.mkdir(parents=True, exist_ok=True)
             with open(target / end, "w", encoding="utf-8") as resolve:
-                dump([piece.model_dump() for piece in res], resolve)
+                dump(res.model_dump(), resolve)
             print(f"Saved student_search_results to '{save_directory}'")
         except OSError as e:
             print(e)
@@ -86,4 +90,20 @@ class CLIConfig():
     def evaluate(
             self, student_search_results_path: str,
             dataset_path: str) -> None:
-        ...
+        if not student_search_results_path.startswith("data/output/"):
+            raise MissingDirectoryError(
+                "You should be evaluating files only inside 'data/output'.")
+        source: Path = Path(student_search_results_path)
+        target: Path = Path(dataset_path)
+        ids: list[str] = []
+        queries: list[str] = []
+        sources: dict[str, dict[str, str]] = {}
+        try:
+            with open(source, encoding="utf-8") as file:
+                data: dict[str, list[dict[str, Any]]] = load(file)
+            for a, b, c in data["search_results"]:
+                ids += a
+                queries += b
+                sources |= c
+        except OSError as e:
+            print(e)
