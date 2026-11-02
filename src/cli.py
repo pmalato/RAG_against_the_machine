@@ -1,13 +1,14 @@
 from pathlib import Path
-from typing import Any
-from json import load, dump
+from json import load, dump, JSONDecodeError
 from .chunker import Chunked
 from .indexer import Indexer
 from .models import (
     Chunk,
     MinimalSource,
     MinimalSearchResults,
-    StudentSearchResults
+    StudentSearchResults,
+    AnsweredQuestion,
+    RagDataset
     )
 from .errors import (
     InvalidChunkSizeError,
@@ -16,6 +17,25 @@ from .errors import (
 
 CODE: str = "dataset_code_public.json"
 DOCS: str = "dataset_docs_public.json"
+IOU_THRESHLOD: float = 0.05
+RECALL_K: tuple[int, int, int, int] = (1, 3, 5, 10)
+
+
+def iou(start_a: int, end_a: int, start_b: int, end_b: int) -> float:
+    intersection: int = max(0, min(end_a, end_b) - max(start_a, start_b))
+    union: int = (end_a - start_a) + (end_b - start_b) - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def question_recall(
+        ref: list[MinimalSource], retrv: list[MinimalSource], k: int) -> float:
+    top = retrv[:k]
+    found = sum(
+        1 for rf in ref if any(res.file_path == rf.file_path and iou(
+            res.first_character_index, res.last_character_index,
+            rf.first_character_index, rf.last_character_index
+            ) > IOU_THRESHLOD for res in top))
+    return found / len(ref)
 
 
 class CLIConfig():
@@ -41,6 +61,7 @@ class CLIConfig():
         indexer.save_processed()
 
     def search(self, query: str, k: int = 10) -> list[Chunk]:
+        """Return the top-k sources for a single query."""
         indexer: Indexer = Indexer.load_processed()
         return indexer.search(query, k)
 
@@ -48,6 +69,9 @@ class CLIConfig():
             self, dataset_path: str,
             save_directory: str = "data/output/"
             "search_results/UnansweredQuestions", k: int = 10) -> None:
+        """Run search over a whole dataset and write a StudentSearchResults
+        JSON file.
+        """
         if not save_directory.startswith("data/output/"):
             raise MissingDirectoryError(
                 "Your answers must go to 'data/output/'")
@@ -79,31 +103,45 @@ class CLIConfig():
         except OSError as e:
             print(e)
 
-    def answer(self, query: str, k: int = 10) -> None:
-        ...
+    def answer(self, query: str, k: int = 10) -> str:
+        """Answer a single query using the retrieved context."""
+        return ""
 
     def answer_dataset(
             self, student_search_results_path: str,
             save_directory: str, k: int = 10) -> None:
+        """Generate answers for a dataset, producing a
+        StudentSearchResultsAndAnswer JSON file.
+        """
         ...
 
     def evaluate(
             self, student_search_results_path: str,
             dataset_path: str) -> None:
-        if not student_search_results_path.startswith("data/output/"):
-            raise MissingDirectoryError(
-                "You should be evaluating files only inside 'data/output'.")
-        source: Path = Path(student_search_results_path)
-        target: Path = Path(dataset_path)
-        ids: list[str] = []
-        queries: list[str] = []
-        sources: dict[str, dict[str, str]] = {}
         try:
-            with open(source, encoding="utf-8") as file:
-                data: dict[str, list[dict[str, Any]]] = load(file)
-            for a, b, c in data["search_results"]:
-                ids += a
-                queries += b
-                sources |= c
-        except OSError as e:
+            with open(student_search_results_path, encoding="utf-8") as file:
+                student: StudentSearchResults = (
+                    StudentSearchResults.model_validate(load(file)))
+            with open(dataset_path, encoding="utf-8") as file2:
+                truth: RagDataset = RagDataset.model_validate(load(file2))
+        except (OSError, JSONDecodeError) as e:
             print(e)
+            return
+        retrv: dict[str, list[MinimalSource]] = {
+            ret.question_id: ret.retrieved_sources
+            for ret in student.search_results}
+        questions: list[AnsweredQuestion] = [
+            q for q in truth.rag_questions if isinstance(
+                q, AnsweredQuestion) and q.sources]
+        if not questions:
+            print("No reference to evaluate with")
+            return
+        missing: int = sum(1 for q in questions if q.question_id not in retrv)
+        print(f"Total number of questions evaluated: {len(questions)}")
+        print(f"Missing questions: {missing}")
+        for k in (x for x in RECALL_K if x <= student.k):
+            scores: list[float] = [
+                question_recall(q.sources, retrv.get(q.question_id, []), k)
+                for q in questions]
+            mean = sum(scores) / len(scores)
+            print(f"Recall@{k}: {mean:.3f} ({mean * 100:.1f}%)")
