@@ -2,6 +2,7 @@ from pathlib import Path
 from json import load, dump, JSONDecodeError
 from .chunker import Chunked
 from .indexer import Indexer
+from .generator import Generator, build_message
 from .models import (
     Chunk,
     MinimalSource,
@@ -11,14 +12,16 @@ from .models import (
     RagDataset
     )
 from .errors import (
+    RagError,
     InvalidChunkSizeError,
     MissingDirectoryError,
     )
 
 CODE: str = "dataset_code_public.json"
 DOCS: str = "dataset_docs_public.json"
-IOU_THRESHLOD: float = 0.05
+IOU_THRESHOLD: float = 0.05
 RECALL_K: tuple[int, int, int, int] = (1, 3, 5, 10)
+CHUNKS_THRESHOLD: int = 256
 
 
 def iou(start_a: int, end_a: int, start_b: int, end_b: int) -> float:
@@ -34,7 +37,7 @@ def question_recall(
         1 for rf in ref if any(res.file_path == rf.file_path and iou(
             res.first_character_index, res.last_character_index,
             rf.first_character_index, rf.last_character_index
-            ) > IOU_THRESHLOD for res in top))
+            ) > IOU_THRESHOLD for res in top))
     return found / len(ref)
 
 
@@ -109,14 +112,18 @@ class CLIConfig():
 
     def answer(self, query: str, k: int = 10) -> None:
         """Answer a single query using the retrieved context."""
-        indexer: Indexer = Indexer.load_processed()
-        chunks: list[Chunk] = indexer.search(query=query, k=k)
-        if not chunks:
-            raise InvalidChunkSizeError("No relevant information was found")
-        prompt = query + "\nAnswer to the question using the following "
-        "information for each chunk:" + str(
-            f"\n\nchunk{i + 1} - ".join(chk.text)
-            for i, chk in enumerate(chunks))
+        if not isinstance(k, int) or k <= 0 or not query.strip():
+            raise ValueError("invalid query or k for answer CLI command.")
+        try:
+            indexer: Indexer = Indexer.load_processed()
+            chunks: list[Chunk] = indexer.search(query, k)
+            if not chunks:
+                raise InvalidChunkSizeError("No valid information found.")
+            prompt: list[dict[str, str]] = build_message(
+                query, chunks[:CHUNKS_THRESHOLD])
+            print(Generator().generate(prompt))
+        except RagError:
+            raise RagError("Something went wrong with the answer")
 
     def answer_dataset(
             self, student_search_results_path: str,
