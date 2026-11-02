@@ -13,6 +13,7 @@ dependencies = [
     "pathlib>=1.0.1",
     "pydantic>=2.14.1",
     "pytest>=9.2.0",
+    "torch>=2.14.1",
     "tqdm>=4.70.1",
     "transformers>=5.20.1",
     "uuid>=1.30",

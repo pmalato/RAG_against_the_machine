@@ -60,10 +60,13 @@ class CLIConfig():
         indexer.build_chunks(chunks)
         indexer.save_processed()
 
-    def search(self, query: str, k: int = 10) -> list[Chunk]:
+    def search(self, query: str, k: int = 10) -> None:
         """Return the top-k sources for a single query."""
         indexer: Indexer = Indexer.load_processed()
-        return indexer.search(query, k)
+        chunks: list[Chunk] = indexer.search(query, k)
+        [print(
+            f"{chk.file_path} [{chk.first_character_index}"
+            f":{chk.last_character_index}]") for chk in chunks]
 
     def search_dataset(
             self, dataset_path: str,
@@ -82,6 +85,7 @@ class CLIConfig():
         end: str = DOCS if dataset_path.endswith(DOCS) else CODE
         source: Path = Path(dataset_path)
         target: Path = Path(save_directory)
+        indexer: Indexer = Indexer.load_processed()
         std_search_res: list[MinimalSearchResults] = []
         res: StudentSearchResults
         try:
@@ -92,7 +96,7 @@ class CLIConfig():
                 query: str = d["question"]
                 chunks: list[MinimalSource] = [MinimalSource(
                     **chk.model_dump(exclude={"text"}))
-                    for chk in self.search(query, k)]
+                    for chk in indexer.search(query, k)]
                 std_search_res += [MinimalSearchResults(
                     question_id=id, question=query, retrieved_sources=chunks)]
             res = StudentSearchResults(search_results=std_search_res, k=k)
@@ -103,9 +107,16 @@ class CLIConfig():
         except OSError as e:
             print(e)
 
-    def answer(self, query: str, k: int = 10) -> str:
+    def answer(self, query: str, k: int = 10) -> None:
         """Answer a single query using the retrieved context."""
-        return ""
+        indexer: Indexer = Indexer.load_processed()
+        chunks: list[Chunk] = indexer.search(query=query, k=k)
+        if not chunks:
+            raise InvalidChunkSizeError("No relevant information was found")
+        prompt = query + "\nAnswer to the question using the following "
+        "information for each chunk:" + str(
+            f"\n\nchunk{i + 1} - ".join(chk.text)
+            for i, chk in enumerate(chunks))
 
     def answer_dataset(
             self, student_search_results_path: str,
