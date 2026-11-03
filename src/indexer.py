@@ -74,7 +74,7 @@ class Indexer():
         indexer._chunks = chunks
         return indexer
 
-    def search(self, query: str, k: int) -> list[Chunk]:
+    def search_aux(self, query: str, k: int) -> list[Chunk]:
         """Return the top-k chunks for a query, best first."""
         if k <= 0 or not query.strip():
             raise ValueError("Invalid query")

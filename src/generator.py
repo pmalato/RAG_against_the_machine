@@ -2,6 +2,13 @@ from re import sub, S
 from typing import Any
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from .models import Chunk
+from .indexer import Indexer
+from .errors import (
+    RagError,
+    InvalidChunkSizeError)
+
+
+CHUNKS_THRESHOLD: int = 256
 
 
 def build_message(question: str, chunks: list[Chunk]) -> list[dict[str, str]]:
@@ -17,6 +24,22 @@ def build_message(question: str, chunks: list[Chunk]) -> list[dict[str, str]]:
     return [
         {"role": "system", "content": system},
         {"role": "user", "content": user}]
+
+
+def answer_aux(query: str, k: int = 10) -> str:
+    """Answer a single query using the retrieved context."""
+    if not isinstance(k, int) or k <= 0 or not query.strip():
+        raise ValueError("invalid query or k for answer CLI command.")
+    try:
+        indexer: Indexer = Indexer.load_processed()
+        chunks: list[Chunk] = indexer.search(query, k)
+        if not chunks:
+            raise InvalidChunkSizeError("No valid information found.")
+        prompt: list[dict[str, str]] = build_message(
+            query, chunks[:CHUNKS_THRESHOLD])
+        return Generator().generate(prompt)
+    except RagError:
+        raise RagError("Something went wrong with the answer")
 
 
 class Generator():
