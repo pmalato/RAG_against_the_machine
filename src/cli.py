@@ -1,6 +1,6 @@
 from pathlib import Path
 from json import load, dump, JSONDecodeError
-import tqdm
+from tqdm import tqdm
 from .chunker import Chunked
 from .indexer import Indexer
 from .generator import (
@@ -160,16 +160,18 @@ class CLIConfig():
                 MinimalAnswer(
                     question=item.question,
                     question_id=item.question_id,
-                    retrieved_sources=item.retrieved_resources,
+                    retrieved_sources=item.retrieved_sources,
                     answer=text))
         res = StudentSearchResultsAndAnswer(
             search_results=answers, k=k)
         output = Path(save_directory) / source.name
         try:
+            output.parent.mkdir(parents=True, exist_ok=True)
             with open(output, "w", encoding="utf-8") as file:
                 file.write(res.model_dump_json())
         except OSError as e:
             raise OSError(f"Cannot open file {e}")
+        print(f"Saved student_search_results_and_answer to {output}")
 
     def evaluate(
             self, student_search_results_path: str,
