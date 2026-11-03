@@ -1,11 +1,12 @@
 from re import sub, S
 from typing import Any
+from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from .models import Chunk
-from .indexer import Indexer
+from .models import MinimalSource, Chunk
+from .chunker import Chunked
 from .errors import (
-    RagError,
-    InvalidChunkSizeError)
+    InvalidChunkSizeError,
+    AccessFilesError)
 
 
 CHUNKS_THRESHOLD: int = 256
@@ -26,20 +27,37 @@ def build_message(question: str, chunks: list[Chunk]) -> list[dict[str, str]]:
         {"role": "user", "content": user}]
 
 
-def answer_aux(query: str, k: int = 10) -> str:
-    """Answer a single query using the retrieved context."""
-    if not isinstance(k, int) or k <= 0 or not query.strip():
-        raise ValueError("invalid query or k for answer CLI command.")
-    try:
-        indexer: Indexer = Indexer.load_processed()
-        chunks: list[Chunk] = indexer.search(query, k)
-        if not chunks:
-            raise InvalidChunkSizeError("No valid information found.")
-        prompt: list[dict[str, str]] = build_message(
-            query, chunks[:CHUNKS_THRESHOLD])
-        return Generator().generate(prompt)
-    except RagError:
-        raise RagError("Something went wrong with the answer")
+def answer_aux(gen: "Generator", query: str, chunks: list[Chunk]) -> str:
+    """Build the prompt from the best chunks and generate an answer."""
+    if not chunks:
+        raise InvalidChunkSizeError("Empty chunks.")
+    prompt: list[dict[str, str]] = build_message(
+        query, chunks[:CHUNKS_THRESHOLD])
+    return gen.generate(prompt)
+
+
+def sources_to_chunks(
+        sources: list[MinimalSource], reader: Chunked,
+        cache: dict[str, str]) -> list[Chunk]:
+    chunks: list[Chunk] = []
+    for src in sources:
+        if src.file_path not in cache:
+            try:
+                cache[src.file_path] = reader._file_reader(
+                    Path(src.file_path))
+            except AccessFilesError:
+                continue
+            text = cache[src.file_path][
+                src.first_character_index:src.last_character_index]
+            if text:
+                chunks += [
+                    Chunk(
+                        file_path=src.file_path,
+                        first_character_index=src.first_character_index,
+                        last_character_index=src.last_character_index,
+                        text=text)]
+            return chunks
+    return chunks
 
 
 class Generator():

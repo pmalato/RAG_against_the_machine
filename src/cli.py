@@ -1,17 +1,24 @@
 from pathlib import Path
 from json import load, dump, JSONDecodeError
+import tqdm
 from .chunker import Chunked
 from .indexer import Indexer
-from .generator import answer_aux
+from .generator import (
+    Generator,
+    answer_aux,
+    sources_to_chunks)
 from .models import (
     Chunk,
     MinimalSource,
     MinimalSearchResults,
+    MinimalAnswer,
     StudentSearchResults,
+    StudentSearchResultsAndAnswer,
     AnsweredQuestion,
     RagDataset
     )
 from .errors import (
+    RagError,
     InvalidChunkSizeError,
     MissingDirectoryError,
     )
@@ -110,7 +117,13 @@ class CLIConfig():
 
     def answer(self, query: str, k: int = 10) -> None:
         """Answer a single query using the retrieved context."""
-        print(answer_aux(query, k))
+        if not isinstance(k, int) or k <= 0 or not query.strip():
+            raise ValueError("Invalid query or k value.")
+        indexer: Indexer = Indexer.load_processed()
+        chunks: list[Chunk] = indexer.search_aux(query, k)
+        if not chunks:
+            raise InvalidChunkSizeError("Empty chunks.")
+        print(answer_aux(Generator(), query, chunks))
 
     def answer_dataset(
             self, student_search_results_path: str,
@@ -118,7 +131,45 @@ class CLIConfig():
         """Generate answers for a dataset, producing a
         StudentSearchResultsAndAnswer JSON file.
         """
-        ...
+        if not student_search_results_path:
+            raise MissingDirectoryError(
+                "Invalid path for 'student_search_results_path'")
+        if not save_directory:
+            raise MissingDirectoryError("Invalid path for 'save_directory'")
+        source: Path = Path(student_search_results_path)
+        gen: Generator = Generator()
+        reader = Chunked()
+        cache: dict[str, str] = {}
+        answers: list[MinimalAnswer] = []
+        res: StudentSearchResultsAndAnswer
+        try:
+            with open(source, encoding="utf-8") as file:
+                data: StudentSearchResults = (
+                    StudentSearchResults.model_validate(load(file)))
+        except OSError as e:
+            raise OSError(f"Cannot read {e}")
+        for item in tqdm(
+                data.search_results, desc="Answering", unit="question"):
+            chunks = sources_to_chunks(
+                item.retrieved_sources, reader, cache)
+            try:
+                text = answer_aux(gen, item.question, chunks)
+            except (RagError, RuntimeError):
+                text = "No relevant information."
+            answers.append(
+                MinimalAnswer(
+                    question=item.question,
+                    question_id=item.question_id,
+                    retrieved_sources=item.retrieved_resources,
+                    answer=text))
+        res = StudentSearchResultsAndAnswer(
+            search_results=answers, k=k)
+        output = Path(save_directory) / source.name
+        try:
+            with open(output, "w", encoding="utf-8") as file:
+                file.write(res.model_dump_json())
+        except OSError as e:
+            raise OSError(f"Cannot open file {e}")
 
     def evaluate(
             self, student_search_results_path: str,
