@@ -5,6 +5,7 @@ from .cli import CLIConfig
 
 
 def main() -> None:
+    """Entrance point for the src module, i.e. the whole project."""
     try:
         Fire(CLIConfig)
     except (KeyboardInterrupt, ValidationError,

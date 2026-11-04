@@ -22,6 +22,7 @@ OVERLAP_RATIO = 0.2
 class Chunked():
     """Discovers, reads and chunks the corpus files."""
     def __init__(self, root: str = "data/raw") -> None:
+        """Declares the attributes of the class."""
         self._root: Path = Path(root)
         self._files: list[Path] = []
         self._processed: list[Chunk] = []
@@ -90,7 +91,11 @@ class Chunked():
                     last_character_index=end)]
 
     def get_files(self) -> list[Path]:
+        """Returns the current files that have been stored within the class."""
         return self._files
 
     def get_processed(self) -> list[Chunk]:
+        """Returns the current chunk list that has been stored within the
+        class.
+        """
         return self._processed

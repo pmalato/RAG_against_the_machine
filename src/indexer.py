@@ -23,6 +23,7 @@ def tokenize_texts(
 class Indexer():
     """BM25 index over chunks, with save/load support."""
     def __init__(self) -> None:
+        """Declares the attributes for the Indexer object."""
         self._chunks: list[Chunk] = []
         self._retriever: BM25 | None = None
 
@@ -90,4 +91,5 @@ class Indexer():
                 if score > 0]
 
     def get_chunks(self) -> list[Chunk]:
+        """Returns the current state of the chunks attribute."""
         return self._chunks

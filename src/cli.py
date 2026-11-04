@@ -30,6 +30,9 @@ RECALL_K: tuple[int, int, int, int] = (1, 3, 5, 10)
 
 
 def iou(start_a: int, end_a: int, start_b: int, end_b: int) -> float:
+    """Calculates the Intersection Over Union (IOU) for each give pair
+    of text/code intervals
+    """
     intersection: int = max(0, min(end_a, end_b) - max(start_a, start_b))
     union: int = (end_a - start_a) + (end_b - start_b) - intersection
     return intersection / union if union > 0 else 0.0
@@ -47,9 +50,11 @@ def question_recall(
 
 
 class CLIConfig():
-    def __init__(self) -> None:
-        ...
-
+    """Responsible for hanlding all Fire inputs (from the terminal).
+    This means that each method acts as its own isolated command having
+    no connection whatsoever with each other. This is a design choice
+    rather than a 'must follow' structure.
+    """
     def index(self, max_chunk_size: int = 2000) -> None:
         """Takes all files in 'data/raw' accepting only '.md', '.txt'
         and '.py' formats. Using the LangChain module, separates every

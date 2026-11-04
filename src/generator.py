@@ -39,6 +39,9 @@ def answer_aux(gen: "Generator", query: str, chunks: list[Chunk]) -> str:
 def sources_to_chunks(
         sources: list[MinimalSource], reader: Chunked,
         cache: dict[str, str]) -> list[Chunk]:
+    """Takes a list of sources and converts each element to a
+    Chunk object.
+    """
     chunks: list[Chunk] = []
     for src in sources:
         if src.file_path not in cache:
@@ -61,13 +64,20 @@ def sources_to_chunks(
 
 
 class Generator():
+    """Class responsible to the command the llm using the 'transformers'
+    and 'torch' models.
+    """
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B") -> None:
+        """Declares the Generator's attributes."""
         self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model: Any = AutoModelForCausalLM.from_pretrained(model_name)
 
     def generate(
             self, messages: list[dict[str, str]],
             max_new_tokens: int = 256) -> str:
+        """Generates an answer using the text information associated to each
+        chunk for the posed query.
+        """
         text = self._tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True,
             enable_thinking=False)
