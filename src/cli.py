@@ -23,8 +23,6 @@ from .errors import (
     MissingDirectoryError,
     )
 
-CODE: str = "dataset_code_public.json"
-DOCS: str = "dataset_docs_public.json"
 IOU_THRESHOLD: float = 0.05
 RECALL_K: tuple[int, int, int, int] = (1, 3, 5, 10)
 
@@ -95,7 +93,8 @@ class CLIConfig():
             raise MissingDirectoryError("Invalid path for 'dataset_path'")
         if not save_directory:
             raise MissingDirectoryError("Invalid path for 'save_directory'")
-        end: str = DOCS if dataset_path.endswith(DOCS) else CODE
+        source: Path = Path(dataset_path)
+        end: str = source.name
         source: Path = Path(dataset_path)
         target: Path = Path(save_directory)
         indexer: Indexer = Indexer.load_processed()
