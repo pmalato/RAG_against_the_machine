@@ -20,8 +20,34 @@ install:
 	fi
 	uv sync
 
+index:
+	uv run python3 -m src index --max_chunk_size 2000
+
+search:
+	uv run python3 -m src search "How to configure the OpenAI server?" --k 5
+
+search_dataset:
+	uv run python -m src search_dataset \
+  	--dataset_path data/datasets/UnansweredQuestions/dataset_docs_public.json \
+  	--k 10 \
+  	--save_directory data/output/search_results/UnansweredQuestions
+
+evaluate:
+	uv run python3 -m src evaluate --student_search_results_path data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
+  	--dataset_path data/datasets/AnsweredQuestions/dataset_docs_public.json
+
+answer:
+	uv run python -m src answer "What HTTP endpoint is used to load a LoRA adapter?" --k 5
+
+answer_dataset:
+	uv run python -m src answer_dataset \
+  --student_search_results_path data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
+  --save_directory data/output/search_results_and_answer/UnansweredQuestions
+
 run:
-	uv run python3 -m src
+	make index
+	make search_dataset
+	make evaluate
 
 debug:
 	uv run python3 pdb -m src
@@ -39,4 +65,4 @@ clean:
 	rm -fr .mypy_cache
 	rm -fr src/__pycache__
 
-.PHONY: all install run debug lint lint-strict clean
+.PHONY: all install index search search_dataset evaluate answer answer_dataset run debug lint lint-strict clean

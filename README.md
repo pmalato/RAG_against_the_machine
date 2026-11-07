@@ -80,32 +80,32 @@ Every command is invoked as `uv run python -m src <command> [options]`.
 ## Example usage
 
 ```bash
-# 1. Build the index (once) - (make index)
+# 1. Build the index (once) - make index
 uv run python -m src index --max_chunk_size 2000
 
-# 2. Single-query search - (make search)
+# 2. Single-query search - make search
 uv run python -m src search "How to configure the OpenAI server?" --k 5
 
-# 3. Search a whole dataset (scope the output directory by dataset) - (make search_dataset)
+# 3. Search a whole dataset (scope the output directory by dataset) make search_dataset
 uv run python -m src search_dataset \
   --dataset_path data/datasets/UnansweredQuestions/dataset_docs_public.json \
   --k 10 \
   --save_directory data/output/search_results/UnansweredQuestions
 
-# 4. Measure recall@k - (make evaluate)
+# 4. Measure recall@k - make evaluate
 uv run python -m src evaluate \
   --student_search_results_path data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
   --dataset_path data/datasets/AnsweredQuestions/dataset_docs_public.json
 
-# 5. Answer a single question - (make answer)
+# 5. Answer a single question - make answer
 uv run python -m src answer "What HTTP endpoint is used to load a LoRA adapter?" --k 5
 
-# 6. Generate answers for a whole dataset - (make answer_dataset)
+# 6. Generate answers for a whole dataset - make answer_dataset
 uv run python -m src answer_dataset \
   --student_search_results_path data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
   --save_directory data/output/search_results_and_answer/UnansweredQuestions
 ```
-The full pipeline can be run with ``make run``: (``index -> search_dataset -> evaluate``)
+`Make run` runs the full intended pipeline: ``index -> search_dataset -> evaluate``
 
 Example output of `evaluate`:
 
