@@ -28,13 +28,13 @@ search:
 
 search_dataset:
 	uv run python -m src search_dataset \
-  	--dataset_path data/datasets/UnansweredQuestions/dataset_docs_public.json \
+  	--dataset_path data/datasets/public/UnansweredQuestions/dataset_docs_public.json \
   	--k 10 \
   	--save_directory data/output/search_results/UnansweredQuestions
 
 evaluate:
 	uv run python3 -m src evaluate --student_search_results_path data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
-  	--dataset_path data/datasets/AnsweredQuestions/dataset_docs_public.json
+  	--dataset_path data/datasets/public/AnsweredQuestions/dataset_docs_public.json
 
 answer:
 	uv run python -m src answer "What HTTP endpoint is used to load a LoRA adapter?" --k 5
