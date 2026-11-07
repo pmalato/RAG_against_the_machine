@@ -36,7 +36,13 @@ make install     # runs `uv sync`
 | Rule | Description |
 |---|---|
 | `make install` | Install dependencies with `uv sync` |
-| `make run` | Run the main module |
+| `make index` | Build the index (once)
+| `make run` | Run the main module (the full pipeline)|
+| `make search` | Single-query search |
+| `make search_dataset` | Search a whole dataset (scope the output directory by dataset) |
+| `make evaluate` | Measure recall@k |
+| `make answer` | Answer a single question |
+| `make answer_dataset` | Generate answers for a whole dataset |
 | `make debug` | Run the main module under `pdb` |
 | `make lint` | `flake8` + `mypy` with the mandatory flags |
 | `make lint-strict` | `flake8` + `mypy --strict` |
@@ -86,7 +92,7 @@ uv run python -m src index --max_chunk_size 2000
 # 2. Single-query search - make search
 uv run python -m src search "How to configure the OpenAI server?" --k 5
 
-# 3. Search a whole dataset (scope the output directory by dataset) make search_dataset
+# 3. Search a whole dataset (scope the output directory by dataset) - make search_dataset
 uv run python -m src search_dataset \
   --dataset_path data/datasets/UnansweredQuestions/dataset_docs_public.json \
   --k 10 \
@@ -105,8 +111,6 @@ uv run python -m src answer_dataset \
   --student_search_results_path data/output/search_results/UnansweredQuestions/dataset_docs_public.json \
   --save_directory data/output/search_results_and_answer/UnansweredQuestions
 ```
-`Make run` runs the full intended pipeline: ``index -> search_dataset -> evaluate``
-
 Example output of `evaluate`:
 
 ```
