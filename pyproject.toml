@@ -23,6 +23,7 @@ dependencies = [
 module = [
     "bm25s.*",
     "tqdm.*",
-    "fire"
+    "fire",
+    "transformers"
     ]
 ignore_missing_imports = true

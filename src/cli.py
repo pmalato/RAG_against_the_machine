@@ -86,9 +86,6 @@ class CLIConfig():
         """Run search over a whole dataset and write a StudentSearchResults
         JSON file.
         """
-        if not save_directory.startswith("data/output/"):
-            raise MissingDirectoryError(
-                "Your answers must go to 'data/output/'")
         if not dataset_path:
             raise MissingDirectoryError("Invalid path for 'dataset_path'")
         if not save_directory:
