@@ -95,7 +95,6 @@ class CLIConfig():
             raise MissingDirectoryError("Invalid path for 'save_directory'")
         source: Path = Path(dataset_path)
         end: str = source.name
-        source: Path = Path(dataset_path)
         target: Path = Path(save_directory)
         indexer: Indexer = Indexer.load_processed()
         std_search_res: list[MinimalSearchResults] = []
