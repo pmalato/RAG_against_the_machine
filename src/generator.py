@@ -59,7 +59,6 @@ def sources_to_chunks(
                         first_character_index=src.first_character_index,
                         last_character_index=src.last_character_index,
                         text=text)]
-            return chunks
     return chunks
 
 
