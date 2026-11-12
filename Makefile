@@ -1,8 +1,9 @@
 LFLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+CUR_DIR := $(notdir $(CURDIR))
 SGOINFRE = /sgoinfre/$(USER)
 
 ifneq ($(shell hostname),portablepmalato)
-	UV_PROJECT_ENVIRONMENT := $(SGOINFRE)/student/.venv
+	UV_PROJECT_ENVIRONMENT := $(SGOINFRE)/$(CUR_DIR)/.venv
 	UV_CACHE_DIR := $(SGOINFRE)/uv-cache
 	UV_LINK_MODE := copy
 	HF_HOME := $(SGOINFRE)/hugging_face
@@ -12,7 +13,7 @@ ifneq ($(shell hostname),portablepmalato)
 	export HF_HOME
 endif
 
-# export /sgoinfre/$(USER)/student/.venv
+# export /sgoinfre/$(USER)/$(CUR_DIR)/.venv
 # export /sgoinfre/$(USER)/uv-cache
 # export copy
 # export /sgoinfre/$(USER)/hugging_face
